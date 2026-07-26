@@ -1,1 +1,99 @@
 @import "tailwindcss";
+@config "../tailwind.config.js";
+
+@layer base {
+  :root {
+    --shadow-clay: 6px 6px 14px rgba(148, 163, 184, 0.25), -6px -6px 14px rgba(255, 255, 255, 0.7);
+    --shadow-clay-active: 3px 3px 8px rgba(148, 163, 184, 0.3), -3px -3px 8px rgba(255, 255, 255, 0.8);
+    --shadow-clay-inset: inset 2px 2px 5px rgba(148, 163, 184, 0.2), inset -2px -2px 5px rgba(255, 255, 255, 0.7);
+    --shadow-glass: 0 20px 45px -12px rgba(15, 23, 42, 0.18);
+  }
+
+  .dark {
+    --shadow-clay: 6px 6px 16px rgba(0, 0, 0, 0.45), -6px -6px 16px rgba(255, 255, 255, 0.03);
+    --shadow-clay-active: 3px 3px 10px rgba(0, 0, 0, 0.5), -3px -3px 10px rgba(255, 255, 255, 0.04);
+    --shadow-clay-inset: inset 2px 2px 6px rgba(0, 0, 0, 0.4), inset -2px -2px 6px rgba(255, 255, 255, 0.03);
+    --shadow-glass: 0 20px 50px -12px rgba(0, 0, 0, 0.55);
+  }
+
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  body {
+    @apply bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100;
+  }
+
+  body,
+  *,
+  *::before,
+  *::after {
+    transition-property: background-color, border-color, color, box-shadow;
+    transition-duration: 200ms;
+    transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  *:focus-visible {
+    outline: 2px solid theme('colors.brand.500');
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+}
+
+@keyframes slow-zoom {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.08);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.thin-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(100, 116, 139, 0.35) transparent;
+}
+
+.thin-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+
+.thin-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.thin-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(100, 116, 139, 0.35);
+  border-radius: 9999px;
+}
+
+.dark .thin-scrollbar {
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+}
+
+.dark .thin-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+:root[data-font-size='small'] {
+  font-size: 15px;
+}
+
+:root[data-font-size='medium'] {
+  font-size: 16px;
+}
+
+:root[data-font-size='large'] {
+  font-size: 18px;
+}

@@ -1,0 +1,6 @@
+export { default as DailyCollection } from './pages/DailyCollection'
+export { default as MonthlyRevenue } from './pages/MonthlyRevenue'
+export { default as OutstandingDues } from './pages/OutstandingDues'
+export { default as CollectionAnalytics } from './pages/CollectionAnalytics'
+export { default as PaymentAnalytics } from './pages/PaymentAnalytics'
+export { default as ExportReports } from './pages/ExportReports'

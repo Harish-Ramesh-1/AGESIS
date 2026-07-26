@@ -1,0 +1,238 @@
+import { useEffect, useState } from 'react'
+import { Award, Pencil, Plus, Trash2 } from 'lucide-react'
+import { useScholarshipStore } from '../store/scholarshipStore'
+import { useStudentDirectoryStore } from '../store/studentDirectoryStore'
+import Badge from '../../../components/common/Badge'
+import Skeleton from '../../../components/common/Skeleton'
+import InputField from '../../../components/common/Input'
+import { PrimaryButton, SecondaryButton } from '../../../components/common/Button'
+import SectionHeader from './SectionHeader'
+import { formatCurrency } from '../../../utils/formatCurrency'
+import { formatDate } from '../../../utils/formatDate'
+import { RECORD_STATUS_VARIANT } from '../utils/feeManagementUtils'
+
+const SCHOLARSHIP_TYPES = ['Academic Scholarship', 'Sports Scholarship', 'Merit Scholarship', 'Government Scholarship']
+
+const EMPTY_FORM = { name: SCHOLARSHIP_TYPES[0], amount: '', percentage: '', reason: '', startDate: '', endDate: '' }
+
+const selectClass =
+  'w-full rounded-xl border border-slate-200 bg-white/80 px-3.5 py-2.5 text-sm text-slate-900 shadow-clay-inset transition-colors duration-200 focus:border-brand-500 focus:outline-none dark:border-white/10 dark:bg-slate-900/60 dark:text-slate-100'
+
+export default function ScholarshipCard() {
+  const studentId = useStudentDirectoryStore((state) => state.selectedStudentId)
+  const status = useScholarshipStore((state) => state.status)
+  const scholarships = useScholarshipStore((state) => state.scholarships)
+  const error = useScholarshipStore((state) => state.error)
+  const fetchAll = useScholarshipStore((state) => state.fetchAll)
+  const addScholarship = useScholarshipStore((state) => state.addScholarship)
+  const updateScholarship = useScholarshipStore((state) => state.updateScholarship)
+  const removeScholarship = useScholarshipStore((state) => state.removeScholarship)
+
+  const [mode, setMode] = useState(null)
+  const [form, setForm] = useState(EMPTY_FORM)
+
+  useEffect(() => {
+    if (studentId) fetchAll(studentId)
+  }, [studentId, fetchAll])
+
+  function openAdd() {
+    setForm(EMPTY_FORM)
+    setMode('add')
+  }
+
+  function openEdit(item) {
+    setForm({
+      name: item.name,
+      amount: item.amount,
+      percentage: item.percentage,
+      reason: item.reason,
+      startDate: item.startDate,
+      endDate: item.endDate,
+    })
+    setMode(item.id)
+  }
+
+  async function handleSubmit(event) {
+    event.preventDefault()
+    const payload = { ...form, amount: Number(form.amount), percentage: Number(form.percentage) }
+    if (mode === 'add') {
+      await addScholarship(payload)
+    } else {
+      updateScholarship(mode, payload)
+    }
+    setMode(null)
+  }
+
+  return (
+    <div className="relative overflow-hidden rounded-clay border border-white/50 bg-white/30 p-5 shadow-clay backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.05] sm:p-6">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-white/70 to-transparent dark:via-white/15"
+      />
+      <SectionHeader
+        title="Scholarships"
+        description="Merit, sports, academic and government scholarships"
+        action={
+          !mode && (
+            <SecondaryButton fullWidth={false} onClick={openAdd}>
+              <Plus className="h-4 w-4" aria-hidden="true" />
+              Add
+            </SecondaryButton>
+          )
+        }
+      />
+
+      {status === 'error' && <p className="text-sm text-red-600 dark:text-red-400">Couldn&apos;t load scholarships. {error}</p>}
+      {(status === 'loading' || status === 'idle') && <Skeleton className="h-24" />}
+
+      {status === 'success' && (
+        <div className="flex flex-col gap-3">
+          {mode === 'add' && (
+            <ScholarshipForm form={form} setForm={setForm} onSubmit={handleSubmit} onCancel={() => setMode(null)} types={SCHOLARSHIP_TYPES} />
+          )}
+
+          {scholarships.length === 0 && mode !== 'add' && (
+            <p className="py-6 text-center text-sm text-slate-500 dark:text-slate-400">No scholarships applied yet.</p>
+          )}
+
+          {scholarships.map((item) =>
+            mode === item.id ? (
+              <ScholarshipForm
+                key={item.id}
+                form={form}
+                setForm={setForm}
+                onSubmit={handleSubmit}
+                onCancel={() => setMode(null)}
+                types={SCHOLARSHIP_TYPES}
+              />
+            ) : (
+              <div
+                key={item.id}
+                className="rounded-xl border border-white/40 bg-white/40 p-4 dark:border-white/10 dark:bg-white/[0.03]"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-50/80 text-brand-600 dark:bg-brand-500/10 dark:text-brand-300">
+                      <Award className="h-4 w-4" aria-hidden="true" />
+                    </span>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-white">{item.name}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{item.reason}</p>
+                    </div>
+                  </div>
+                  <Badge variant={RECORD_STATUS_VARIANT[item.status] ?? 'success'}>{item.status}</Badge>
+                </div>
+
+                <div className="mt-3 grid grid-cols-2 gap-3 text-xs sm:grid-cols-4">
+                  <div>
+                    <p className="text-slate-400 dark:text-slate-500">Amount</p>
+                    <p className="mt-0.5 font-medium text-slate-700 dark:text-slate-200">{formatCurrency(item.amount)}</p>
+                  </div>
+                  <div>
+                    <p className="text-slate-400 dark:text-slate-500">Percentage</p>
+                    <p className="mt-0.5 font-medium text-slate-700 dark:text-slate-200">{item.percentage}%</p>
+                  </div>
+                  <div>
+                    <p className="text-slate-400 dark:text-slate-500">Start Date</p>
+                    <p className="mt-0.5 font-medium text-slate-700 dark:text-slate-200">{formatDate(item.startDate)}</p>
+                  </div>
+                  <div>
+                    <p className="text-slate-400 dark:text-slate-500">End Date</p>
+                    <p className="mt-0.5 font-medium text-slate-700 dark:text-slate-200">{formatDate(item.endDate)}</p>
+                  </div>
+                </div>
+
+                <div className="mt-3 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => openEdit(item)}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-white/50 bg-white/60 px-2.5 py-1.5 text-xs font-medium text-slate-700 transition-all duration-200 ease-premium hover:-translate-y-0.5 hover:bg-white/80 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-200 dark:hover:bg-white/10"
+                  >
+                    <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removeScholarship(item.id)}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50/70 px-2.5 py-1.5 text-xs font-medium text-red-700 transition-all duration-200 ease-premium hover:-translate-y-0.5 hover:bg-red-100 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300 dark:hover:bg-red-500/20"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                    Remove
+                  </button>
+                </div>
+              </div>
+            ),
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+export function ScholarshipForm({ form, setForm, onSubmit, onCancel, types }) {
+  function handleChange(key, value) {
+    setForm((prev) => ({ ...prev, [key]: value }))
+  }
+
+  return (
+    <form
+      onSubmit={onSubmit}
+      className="flex flex-col gap-3 rounded-xl border border-brand-200/60 bg-brand-50/40 p-4 dark:border-brand-500/20 dark:bg-brand-500/[0.06]"
+    >
+      <div className="flex flex-col gap-1.5">
+        <label className="text-xs font-medium text-slate-700 dark:text-slate-200">Name</label>
+        <select value={form.name} onChange={(event) => handleChange('name', event.target.value)} className={selectClass}>
+          {types.map((type) => (
+            <option key={type} value={type}>
+              {type}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <InputField
+          label="Amount"
+          type="number"
+          min="0"
+          value={form.amount}
+          onChange={(event) => handleChange('amount', event.target.value)}
+          required
+        />
+        <InputField
+          label="Percentage"
+          type="number"
+          min="0"
+          max="100"
+          value={form.percentage}
+          onChange={(event) => handleChange('percentage', event.target.value)}
+          required
+        />
+      </div>
+      <InputField label="Reason" value={form.reason} onChange={(event) => handleChange('reason', event.target.value)} required />
+      <div className="grid grid-cols-2 gap-3">
+        <InputField
+          label="Start Date"
+          type="date"
+          value={form.startDate}
+          onChange={(event) => handleChange('startDate', event.target.value)}
+          required
+        />
+        <InputField
+          label="End Date"
+          type="date"
+          value={form.endDate}
+          onChange={(event) => handleChange('endDate', event.target.value)}
+          required
+        />
+      </div>
+      <div className="flex gap-3">
+        <SecondaryButton type="button" fullWidth={false} onClick={onCancel}>
+          Cancel
+        </SecondaryButton>
+        <PrimaryButton type="submit" fullWidth={false}>
+          Save
+        </PrimaryButton>
+      </div>
+    </form>
+  )
+}

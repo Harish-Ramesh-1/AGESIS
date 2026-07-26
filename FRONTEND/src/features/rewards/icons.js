@@ -1,0 +1,33 @@
+import {
+  Award,
+  BadgeCheck,
+  CalendarCheck,
+  Coins,
+  FileBadge,
+  Flame,
+  Gem,
+  GraduationCap,
+  Headset,
+  Percent,
+  ShoppingBag,
+  Sparkles,
+  Sunrise,
+  Wallet,
+} from 'lucide-react'
+
+export const REWARD_ICONS = {
+  Wallet,
+  Flame,
+  Sunrise,
+  Award,
+  CalendarCheck,
+  GraduationCap,
+  Gem,
+  Headset,
+  Percent,
+  FileBadge,
+  ShoppingBag,
+  BadgeCheck,
+  Sparkles,
+  Coins,
+}
