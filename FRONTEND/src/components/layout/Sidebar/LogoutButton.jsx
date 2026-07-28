@@ -1,16 +1,18 @@
 import { LogOut } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
 import clsx from 'clsx'
 import SidebarTooltip from './SidebarTooltip'
 import { useAuthStore } from '../../../store/authStore'
 
 export default function LogoutButton({ isCollapsed }) {
-  const navigate = useNavigate()
   const logout = useAuthStore((state) => state.logout)
 
   function handleLogout() {
     logout()
-    navigate('/', { replace: true })
+    // Full page load, not SPA navigation — see usePortalAuth.js for why:
+    // per-user data stores cache in memory with no reset hook, so a hard
+    // navigation is what guarantees this account's data can't leak into
+    // whichever account logs in next in this tab.
+    window.location.assign('/')
   }
 
   return (

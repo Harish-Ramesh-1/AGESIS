@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { PORTALS, PORTAL_IDS } from '../../../constants/roles'
 import { isValidEmail, validatePortalId } from '../utils/validators'
 import { login as loginRequest } from '../services/auth.service'
@@ -19,7 +18,6 @@ const PORTAL_DASHBOARD_PATH = {
 }
 
 export default function usePortalAuth() {
-  const navigate = useNavigate()
   const login = useAuthStore((state) => state.login)
   const redirectTimeoutRef = useRef(null)
 
@@ -81,8 +79,14 @@ export default function usePortalAuth() {
       })
       const dashboardPath = PORTAL_DASHBOARD_PATH[selectedPortalId]
       if (dashboardPath) {
+        // Full page load (not SPA navigation) on purpose: every per-user data
+        // store (student, fees, payments, dashboard, notifications, ...)
+        // caches its fetch result in memory for the lifetime of the tab, with
+        // no reset hook on login/logout. A hard navigation is the one change
+        // that guarantees a previous account's cached data can never leak
+        // into the next login, instead of patching every store individually.
         redirectTimeoutRef.current = window.setTimeout(() => {
-          navigate(dashboardPath, { replace: true })
+          window.location.assign(dashboardPath)
         }, REDIRECT_DELAY_MS)
       }
     } catch (error) {
