@@ -1,53 +1,8 @@
-const DELAY_MS = 600
+import { apiGet, apiPatch, apiPost, apiDelete } from '../../../../services/apiClient'
 
-function delay(ms = DELAY_MS) {
-  return new Promise((resolve) => setTimeout(resolve, ms))
-}
-
-const ACCOUNTANT_NAME = 'Kavita Sharma'
-
-// ---- in-memory "database" ----
-
-const PROFILE = {
-  employeeId: 'EMP-2019-0042',
-  name: ACCOUNTANT_NAME,
-  avatarInitials: 'KS',
-  email: 'kavita.sharma@agesis.edu',
-  phone: '+91 98450 67890',
-  department: 'Finance & Accounts',
-  designation: 'Senior Accountant',
-  joiningDate: '2019-06-03',
-}
-
-const ACCOUNT_ACTIVITY = {
-  lastLogin: '2026-07-26T06:45:00Z',
-  activeSessionCount: 3,
-}
-
-let TWO_FACTOR_ENABLED = false
-
-const SESSIONS = [
-  { id: 'sess-1', device: 'MacBook Pro', browser: 'Chrome 126', location: 'Chennai, India', lastActive: '2026-07-26T09:10:00Z', current: true },
-  { id: 'sess-2', device: 'iPhone 14', browser: 'Safari Mobile', location: 'Chennai, India', lastActive: '2026-07-25T20:32:00Z', current: false },
-  { id: 'sess-3', device: 'Windows PC', browser: 'Edge 125', location: 'Bengaluru, India', lastActive: '2026-07-24T13:05:00Z', current: false },
-  { id: 'sess-4', device: 'iPad Air', browser: 'Safari', location: 'Chennai, India', lastActive: '2026-07-20T08:47:00Z', current: false },
-]
-
-const LOGIN_HISTORY = [
-  { id: 'log-1', date: '2026-07-26T06:45:00Z', device: 'MacBook Pro - Chrome 126', ipAddress: '103.21.244.10', status: 'success' },
-  { id: 'log-2', date: '2026-07-25T20:32:00Z', device: 'iPhone 14 - Safari Mobile', ipAddress: '117.198.10.44', status: 'success' },
-  { id: 'log-3', date: '2026-07-24T13:05:00Z', device: 'Windows PC - Edge 125', ipAddress: '49.204.117.6', status: 'success' },
-  { id: 'log-4', date: '2026-07-23T18:12:00Z', device: 'Unknown Device - Chrome 124', ipAddress: '188.65.114.9', status: 'failed' },
-  { id: 'log-5', date: '2026-07-22T09:02:00Z', device: 'MacBook Pro - Chrome 126', ipAddress: '103.21.244.10', status: 'success' },
-  { id: 'log-6', date: '2026-07-20T08:47:00Z', device: 'iPad Air - Safari', ipAddress: '117.198.10.44', status: 'success' },
-  { id: 'log-7', date: '2026-07-18T21:40:00Z', device: 'Unknown Device - Firefox 118', ipAddress: '45.79.201.3', status: 'failed' },
-  { id: 'log-8', date: '2026-07-15T07:55:00Z', device: 'Windows PC - Edge 125', ipAddress: '49.204.117.6', status: 'success' },
-  { id: 'log-9', date: '2026-07-10T11:20:00Z', device: 'MacBook Pro - Chrome 125', ipAddress: '103.21.244.10', status: 'success' },
-]
-
-const PREFERENCES = {
+const DEFAULT_PREFERENCES = {
   notifications: {
-    paymentAlerts: { email: true, sms: true, push: true },
+    paymentAlerts: { email: true, sms: false, push: true },
     overdueAlerts: { email: true, sms: false, push: true },
     systemAnnouncements: { email: true, sms: false, push: false },
     weeklySummary: { email: true, sms: false, push: false },
@@ -57,79 +12,138 @@ const PREFERENCES = {
   defaultAcademicYear: '2025-2026',
 }
 
+function initialsOf(name) {
+  return (name ?? '')
+    .split(' ')
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase()
+}
+
+function mapProfile(row) {
+  return {
+    // The backend's shared /settings/profile resource has no HR-style fields (employee ID,
+    // department, designation, joining date) — those don't exist anywhere in the schema for
+    // accountant users, so they're left blank rather than fabricated.
+    employeeId: row.employeeId ?? '',
+    name: row.fullName ?? '',
+    avatarInitials: initialsOf(row.fullName),
+    email: row.email ?? '',
+    phone: row.phone ?? '',
+    department: '',
+    designation: '',
+    joiningDate: null,
+  }
+}
+
 // ---- profile ----
 
 export async function fetchProfile() {
-  await delay()
-  return { profile: { ...PROFILE }, activity: { ...ACCOUNT_ACTIVITY } }
+  const [profileRes, securityRes] = await Promise.all([
+    apiGet('/settings/profile'),
+    apiGet('/settings/security').catch(() => ({ data: { sessions: [] } })),
+  ])
+  const profile = profileRes.data ?? {}
+  const sessions = securityRes.data?.sessions ?? []
+  const lastLogin = sessions.reduce((latest, session) => {
+    const t = session.lastActive
+    if (!t) return latest
+    return !latest || new Date(t) > new Date(latest) ? t : latest
+  }, null)
+
+  return {
+    profile: mapProfile(profile),
+    activity: {
+      lastLogin,
+      activeSessionCount: sessions.length,
+    },
+  }
 }
 
 export async function updateProfile(patch) {
-  await delay()
-  Object.assign(PROFILE, patch)
-  return { ...PROFILE }
+  const { data } = await apiPatch('/settings/profile', {
+    fullName: patch.name,
+    email: patch.email,
+    phone: patch.phone,
+  })
+  return mapProfile(data ?? {})
 }
 
 // ---- security ----
 
 export async function fetchSecurity() {
-  await delay()
+  const { data } = await apiGet('/settings/security')
   return {
-    twoFactorEnabled: TWO_FACTOR_ENABLED,
-    sessions: SESSIONS.map((session) => ({ ...session })),
-    loginHistory: LOGIN_HISTORY.map((entry) => ({ ...entry })),
+    twoFactorEnabled: !!data?.twoFactorEnabled,
+    sessions: (data?.sessions ?? []).map((session) => ({
+      id: session.id,
+      device: session.device,
+      browser: session.browser,
+      location: session.location,
+      lastActive: session.lastActive,
+      current: !!session.current,
+    })),
+    // The backend has no login-history endpoint (only current active sessions) — left empty
+    // rather than fabricated.
+    loginHistory: [],
   }
 }
 
-export async function changePassword({ currentPassword }) {
-  await delay()
-  if (currentPassword !== 'password123') {
-    throw new Error('Current password is incorrect.')
-  }
-  // newPassword is accepted by the caller but not persisted anywhere in this mock service
+export async function changePassword({ currentPassword, newPassword }) {
+  await apiPost('/settings/security/change-password', { currentPassword, newPassword })
   return { success: true, changedAt: new Date().toISOString() }
 }
 
 export async function toggleTwoFactor(enabled) {
-  await delay()
-  TWO_FACTOR_ENABLED = enabled
-  return { twoFactorEnabled: TWO_FACTOR_ENABLED }
+  const { data } = await apiPatch('/settings/security/two-factor', { enabled })
+  return { twoFactorEnabled: data?.twoFactorEnabled ?? enabled }
 }
 
 export async function signOutSession(sessionId) {
-  await delay()
-  const index = SESSIONS.findIndex((session) => session.id === sessionId)
-  if (index !== -1 && !SESSIONS[index].current) {
-    SESSIONS.splice(index, 1)
-  }
-  return SESSIONS.map((session) => ({ ...session }))
+  await apiDelete(`/settings/security/sessions/${sessionId}`)
+  const { data } = await apiGet('/settings/security')
+  return (data?.sessions ?? []).map((session) => ({
+    id: session.id,
+    device: session.device,
+    browser: session.browser,
+    location: session.location,
+    lastActive: session.lastActive,
+    current: !!session.current,
+  }))
 }
 
 export async function signOutOtherSessions() {
-  await delay()
-  const remaining = SESSIONS.filter((session) => session.current)
-  SESSIONS.length = 0
-  SESSIONS.push(...remaining)
-  return SESSIONS.map((session) => ({ ...session }))
+  await apiDelete('/settings/security/sessions')
+  const { data } = await apiGet('/settings/security')
+  return (data?.sessions ?? []).map((session) => ({
+    id: session.id,
+    device: session.device,
+    browser: session.browser,
+    location: session.location,
+    lastActive: session.lastActive,
+    current: !!session.current,
+  }))
 }
 
 // ---- preferences ----
 
-export async function fetchPreferences() {
-  await delay()
+function mergePreferences(raw) {
+  if (!raw || typeof raw !== 'object' || Object.keys(raw).length === 0) return { ...DEFAULT_PREFERENCES }
   return {
-    ...PREFERENCES,
-    notifications: JSON.parse(JSON.stringify(PREFERENCES.notifications)),
+    ...DEFAULT_PREFERENCES,
+    ...raw,
+    notifications: { ...DEFAULT_PREFERENCES.notifications, ...(raw.notifications ?? {}) },
   }
 }
 
+export async function fetchPreferences() {
+  const { data } = await apiGet('/settings/preferences')
+  return mergePreferences(data)
+}
+
 export async function updatePreferences(patch) {
-  await delay()
-  Object.assign(PREFERENCES, patch, {
-    notifications: patch.notifications ? { ...PREFERENCES.notifications, ...patch.notifications } : PREFERENCES.notifications,
-  })
-  return {
-    ...PREFERENCES,
-    notifications: JSON.parse(JSON.stringify(PREFERENCES.notifications)),
-  }
+  const { data } = await apiPatch('/settings/preferences', patch)
+  return mergePreferences(data)
 }

@@ -1,72 +1,83 @@
-const MOCK_FEE_COMPONENTS = [
-  { key: 'tuition', label: 'Tuition', amount: 60000, paid: 40000, pending: 20000, status: 'partial' },
-  { key: 'transport', label: 'Transport', amount: 15000, paid: 15000, pending: 0, status: 'paid' },
-  { key: 'hostel', label: 'Hostel', amount: 10000, paid: 5000, pending: 5000, status: 'partial' },
-  { key: 'library', label: 'Library', amount: 5000, paid: 5000, pending: 0, status: 'paid' },
-  { key: 'exam', label: 'Exam', amount: 8000, paid: 5000, pending: 3000, status: 'partial' },
-  { key: 'sports', label: 'Sports', amount: 6000, paid: 2500, pending: 3500, status: 'partial' },
-  { key: 'miscellaneous', label: 'Miscellaneous', amount: 6000, paid: 0, pending: 6000, status: 'pending' },
-  { key: 'lateFee', label: 'Late Fee', amount: 0, paid: 0, pending: 0, status: 'not_applicable' },
-  { key: 'scholarship', label: 'Scholarship', amount: -5000, paid: -5000, pending: 0, status: 'applied' },
-  { key: 'discount', label: 'Discount', amount: -3000, paid: -3000, pending: 0, status: 'applied' },
-]
+import { apiGet } from '../../../services/apiClient'
 
-const MOCK_INSTALLMENTS = [
-  { id: 1, label: 'Installment 1', amount: 27500, dueDate: '2025-06-15', paidDate: '2025-06-10', status: 'paid' },
-  { id: 2, label: 'Installment 2', amount: 27500, dueDate: '2025-09-15', paidDate: '2025-09-12', status: 'paid' },
-  { id: 3, label: 'Installment 3', amount: 27500, dueDate: '2026-08-15', status: 'upcoming' },
-  { id: 4, label: 'Installment 4', amount: 27500, dueDate: '2026-12-15', status: 'pending' },
-]
-
-const MOCK_SCHOLARSHIPS = [
-  {
-    id: 's1',
-    type: 'scholarship',
-    name: 'Merit Scholarship',
-    appliedAmount: 5000,
-    description: 'Awarded for academic excellence in the previous year.',
-  },
-  {
-    id: 's2',
-    type: 'discount',
-    name: 'Sibling Discount',
-    appliedAmount: 3000,
-    description: '10% discount for enrolling a second child.',
-  },
-]
-
-const MOCK_ACTIVITIES = [
-  { id: 'act1', type: 'payment', title: 'Payment Completed', description: '₹25,000 paid via UPI', date: '2026-06-02' },
-  { id: 'act2', type: 'invoice', title: 'Invoice Generated', description: 'Invoice INV-2216 generated', date: '2026-07-18' },
-  { id: 'act3', type: 'receipt', title: 'Receipt Downloaded', description: 'Receipt RCT-9821 downloaded', date: '2026-06-03' },
-  { id: 'act4', type: 'latefee', title: 'Late Fee Updated', description: 'Late fee policy updated for Q2', date: '2026-05-20' },
-]
-
-const totalFee = MOCK_FEE_COMPONENTS.reduce((sum, item) => (item.amount > 0 ? sum + item.amount : sum), 0)
-const amountPaid = MOCK_FEE_COMPONENTS.reduce((sum, item) => (item.amount > 0 ? sum + item.paid : sum), 0)
-
-const MOCK_FEE_DETAILS = {
-  totalFee,
-  amountPaid,
-  pendingAmount: totalFee - amountPaid,
-  progressPercent: Math.round((amountPaid / totalFee) * 100),
-  scholarshipTotal: MOCK_SCHOLARSHIPS.reduce((sum, item) => sum + item.appliedAmount, 0),
-  upcomingDue: {
-    amount: 18750,
-    dueDate: '2026-08-15',
-    daysRemaining: 22,
-    lateFeePerDay: 100,
-    lateFeeGraceDays: 7,
-  },
-  components: MOCK_FEE_COMPONENTS,
-  installments: MOCK_INSTALLMENTS,
-  scholarships: MOCK_SCHOLARSHIPS,
-  activities: MOCK_ACTIVITIES,
+async function getPrimaryStudentId() {
+  const { data: children } = await apiGet('/students/me/children')
+  const student = children?.[0]
+  if (!student) throw new Error('No student profile is linked to this account yet.')
+  return student
 }
 
-const FETCH_DELAY_MS = 800
+function deriveComponents(components = [], totalFee, amountPaid) {
+  const paidRatio = totalFee > 0 ? amountPaid / totalFee : 0
+  return components.map((component, index) => {
+    const amount = Number(component.amount || 0)
+    const paid = Math.round(amount * paidRatio)
+    const pending = amount - paid
+    return {
+      key: component.category?.toLowerCase().replace(/\s+/g, '-') || `component-${index}`,
+      label: component.category || 'Fee Component',
+      amount,
+      paid,
+      pending,
+      status: pending <= 0 ? 'paid' : paid > 0 ? 'partial' : 'pending',
+    }
+  })
+}
 
 export async function fetchFeeDetails() {
-  await new Promise((resolve) => setTimeout(resolve, FETCH_DELAY_MS))
-  return MOCK_FEE_DETAILS
+  const student = await getPrimaryStudentId()
+
+  const [{ data: assignment }, { data: dues }, { data: scholarships }, { data: discounts }, { data: lateFeeRule }] = await Promise.all([
+    apiGet(`/students/${student.id}/fee-structure`),
+    apiGet(`/dues?studentId=${student.id}`),
+    apiGet(`/fees/students/${student.id}/scholarships`),
+    apiGet(`/fees/students/${student.id}/discounts`),
+    apiGet('/dues/late-fees/rules'),
+  ])
+
+  const totalFee = Number(assignment?.total_amount || 0)
+  const amountPaid = (dues || []).reduce((sum, due) => sum + Number(due.amount_paid || 0), 0)
+  const pendingAmount = Math.max(totalFee - amountPaid, 0)
+
+  const upcoming = (dues || [])
+    .filter((due) => due.status !== 'paid')
+    .sort((a, b) => new Date(a.due_date) - new Date(b.due_date))[0]
+
+  const daysRemaining = upcoming
+    ? Math.ceil((new Date(upcoming.due_date).getTime() - Date.now()) / 86400000)
+    : null
+
+  return {
+    totalFee,
+    amountPaid,
+    pendingAmount,
+    progressPercent: totalFee > 0 ? Math.round((amountPaid / totalFee) * 100) : 0,
+    scholarshipTotal: [...(scholarships || []), ...(discounts || [])].reduce(
+      (sum, item) => sum + Number(item.amount || 0),
+      0,
+    ),
+    upcomingDue: upcoming
+      ? {
+          amount: Number(upcoming.amount_due) - Number(upcoming.amount_paid),
+          dueDate: upcoming.due_date,
+          daysRemaining,
+          lateFeePerDay: lateFeeRule?.fee_type === 'flat' ? Number(lateFeeRule.amount) : 0,
+          lateFeeGraceDays: lateFeeRule?.grace_days ?? 7,
+        }
+      : null,
+    components: deriveComponents(assignment?.components, totalFee, amountPaid),
+    installments: (dues || []).map((due) => ({
+      id: due.id,
+      label: due.description || 'Installment',
+      amount: Number(due.amount_due),
+      dueDate: due.due_date,
+      paidDate: due.status === 'paid' ? due.updated_at : undefined,
+      status: due.status === 'paid' ? 'paid' : new Date(due.due_date) < new Date() ? 'pending' : 'upcoming',
+    })),
+    scholarships: [
+      ...(scholarships || []).map((s) => ({ id: s.id, type: 'scholarship', name: s.name || 'Scholarship', appliedAmount: Number(s.amount || 0), description: '' })),
+      ...(discounts || []).map((d) => ({ id: d.id, type: 'discount', name: d.label || 'Discount', appliedAmount: Number(d.amount || 0), description: d.reason || '' })),
+    ],
+    activities: [],
+  }
 }

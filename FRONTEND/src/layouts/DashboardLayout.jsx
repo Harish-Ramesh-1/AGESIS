@@ -7,7 +7,7 @@ import { PARENT_NAV_SECTIONS, getPageTitle } from '../features/parent/navigation
 import agesisLogo from '../assets/logos/agesis-logo.svg'
 
 export default function DashboardLayout() {
-  const [isCollapsed, setIsCollapsed] = useLocalStorage('agesis-sidebar-collapsed', false)
+  const [isCollapsed, setIsCollapsed] = useLocalStorage('agesis-sidebar-collapsed', true)
   const location = useLocation()
 
   return (

@@ -13,7 +13,12 @@ export const PORTALS = [
     idPlaceholder: 'P-102345',
     idPattern: /^P-\d{4,}$/,
     idHelperText: 'Must begin with "P-", e.g. P-12345',
-    demoCredentials: { idValue: 'P-12345', email: 'parent.demo@agesisschool.edu' },
+    // Real inbox — for judges verifying actual OTP delivery. Two variants so
+    // judges can see both a pending-balance and a fully-paid parent account.
+    demoCredentials: { idValue: 'P-20001', email: 'hr@paperbuddy.in', note: 'has a fee balance due' },
+    demoCredentialsAlt: { idValue: 'P-20004', email: 'hr@paperbuddy.in', note: 'fully paid, nothing due' },
+    // Not a real inbox — for casual visitors, relies on the fallback OTP code.
+    sampleCredentials: { idValue: 'P-12345', email: 'parent@agesis.com' },
   },
   {
     id: PORTAL_IDS.ACCOUNTANT,
@@ -23,7 +28,8 @@ export const PORTALS = [
     idPlaceholder: 'ACC1023',
     idPattern: /^ACC\d{3,}$/,
     idHelperText: 'Must begin with "ACC", e.g. ACC1023',
-    demoCredentials: { idValue: 'ACC1023', email: 'accountant.demo@agesisschool.edu' },
+    demoCredentials: { idValue: 'ACC1023', email: 'hr@paperbuddy.in' },
+    sampleCredentials: { idValue: 'ACC1024', email: 'accountant@agesis.com' },
   },
   {
     id: PORTAL_IDS.ADMIN,
@@ -33,7 +39,8 @@ export const PORTALS = [
     idPlaceholder: 'ADM1001',
     idPattern: /^ADM\d{3,}$/,
     idHelperText: 'Must begin with "ADM", e.g. ADM1001',
-    demoCredentials: { idValue: 'ADM1001', email: 'admin.demo@agesisschool.edu' },
+    demoCredentials: { idValue: 'ADM1001', email: 'hr@paperbuddy.in' },
+    sampleCredentials: { idValue: 'ADM1002', email: 'admin@agesis.com' },
   },
 ]
 

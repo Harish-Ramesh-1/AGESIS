@@ -1,0 +1,6 @@
+export { default as PaymentsOverview } from './pages/PaymentsOverview'
+export { default as PaymentVerification } from './pages/PaymentVerification'
+export { default as GatewayTransactions } from './pages/GatewayTransactions'
+export { default as RefundApprovals } from './pages/RefundApprovals'
+export { default as FailedTransactions } from './pages/FailedTransactions'
+export { default as PaymentReconciliation } from './pages/PaymentReconciliation'

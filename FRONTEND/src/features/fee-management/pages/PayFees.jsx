@@ -119,13 +119,13 @@ export default function PayFees() {
             <div>
               <p className="text-xs text-slate-400 dark:text-slate-500">Due Date</p>
               <p className="mt-1 text-lg font-semibold text-slate-800 dark:text-slate-100">
-                {formatDate(feeDetails.upcomingDue.dueDate)}
+                {feeDetails.upcomingDue ? formatDate(feeDetails.upcomingDue.dueDate) : '—'}
               </p>
             </div>
             <div>
               <p className="text-xs text-slate-400 dark:text-slate-500">Late Fee</p>
               <p className="mt-1 text-lg font-semibold text-slate-800 dark:text-slate-100">
-                {formatCurrency(feeDetails.upcomingDue.lateFeePerDay)}/day after due date
+                {feeDetails.upcomingDue ? `${formatCurrency(feeDetails.upcomingDue.lateFeePerDay)}/day after due date` : 'None'}
               </p>
             </div>
           </div>

@@ -70,9 +70,9 @@ export default function PendingDues() {
 
   const pendingComponents = details.components.filter((component) => component.pending > 0)
   const { upcomingDue } = details
-  const remaining = daysUntil(upcomingDue.dueDate)
+  const remaining = upcomingDue ? daysUntil(upcomingDue.dueDate) : 0
 
-  if (pendingComponents.length === 0) {
+  if (pendingComponents.length === 0 || !upcomingDue) {
     return (
       <div>
         <PageHeader title="Pending Dues" description="All your outstanding fees in one place." />

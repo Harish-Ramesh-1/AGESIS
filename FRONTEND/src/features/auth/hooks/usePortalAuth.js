@@ -16,6 +16,7 @@ const REDIRECT_DELAY_MS = 900
 const PORTAL_DASHBOARD_PATH = {
   [PORTAL_IDS.PARENT]: '/parent/dashboard',
   [PORTAL_IDS.ACCOUNTANT]: '/accountant/dashboard',
+  [PORTAL_IDS.ADMIN]: '/admin/dashboard',
 }
 
 export default function usePortalAuth() {
@@ -80,9 +81,14 @@ export default function usePortalAuth() {
     setOtpError('')
     setIsSubmitting(true)
     try {
-      await verifyOtp({ portal: selectedPortalId, idValue, email, otp })
+      const result = await verifyOtp({ portal: selectedPortalId, idValue, email, otp })
       setStep(STEP.SUCCESS)
-      login({ portal: selectedPortalId })
+      login({
+        portal: selectedPortalId,
+        user: result?.user,
+        accessToken: result?.accessToken,
+        refreshToken: result?.refreshToken,
+      })
       const dashboardPath = PORTAL_DASHBOARD_PATH[selectedPortalId]
       if (dashboardPath) {
         redirectTimeoutRef.current = window.setTimeout(() => {

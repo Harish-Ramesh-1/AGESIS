@@ -10,7 +10,7 @@ import { ACCOUNTANT_ROUTES } from '../constants/routes'
 import agesisLogo from '../assets/logos/agesis-logo.svg'
 
 export default function AccountantDashboardLayout() {
-  const [isCollapsed, setIsCollapsed] = useLocalStorage('agesis-accountant-sidebar-collapsed', false)
+  const [isCollapsed, setIsCollapsed] = useLocalStorage('agesis-accountant-sidebar-collapsed', true)
   const location = useLocation()
   const navigate = useNavigate()
 

@@ -1,12 +1,19 @@
-const MOCK_DOCUMENTS = {
-  statement: { id: 'STMT-2026', label: 'Fee Statement', date: '2026-07-24' },
-  invoice: { id: 'INV-2216', label: 'Invoice - July 2026', date: '2026-07-18' },
-  receipt: { id: 'RCT-9821', label: 'Receipt - June 2026', date: '2026-06-02' },
-}
-
-const FETCH_DELAY_MS = 500
+import { apiGet } from '../../../services/apiClient'
 
 export async function fetchDocuments() {
-  await new Promise((resolve) => setTimeout(resolve, FETCH_DELAY_MS))
-  return MOCK_DOCUMENTS
+  const { data: archive } = await apiGet('/documents/archive')
+  const latestInvoice = (archive || []).find((doc) => doc.type === 'invoice')
+  const latestReceipt = (archive || []).find((doc) => doc.type === 'receipt')
+
+  return {
+    statement: latestInvoice
+      ? { id: latestInvoice.number, label: 'Fee Statement', date: latestInvoice.createdAt?.slice(0, 10) }
+      : null,
+    invoice: latestInvoice
+      ? { id: latestInvoice.number, label: `Invoice - ${latestInvoice.number}`, date: latestInvoice.createdAt?.slice(0, 10) }
+      : null,
+    receipt: latestReceipt
+      ? { id: latestReceipt.number, label: `Receipt - ${latestReceipt.number}`, date: latestReceipt.createdAt?.slice(0, 10) }
+      : null,
+  }
 }

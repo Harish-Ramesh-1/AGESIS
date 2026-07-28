@@ -1,187 +1,4 @@
-const MOCK_NOTIFICATIONS = [
-  {
-    id: 'n1',
-    category: 'payment',
-    title: 'Payment Successful',
-    description: '₹25,000 received successfully.',
-    timestamp: '2026-07-24T10:30:00Z',
-    priority: 'medium',
-    unread: true,
-    pinned: false,
-    archived: false,
-    actionLabel: 'View Receipt',
-    actionType: 'view-receipt',
-  },
-  {
-    id: 'n2',
-    category: 'payment',
-    title: 'Fee Reminder',
-    description: 'Your next installment is due on August 10.',
-    timestamp: '2026-07-23T09:00:00Z',
-    priority: 'high',
-    unread: true,
-    pinned: true,
-    archived: false,
-    actionLabel: 'Pay Now',
-    actionType: 'pay-now',
-  },
-  {
-    id: 'n3',
-    category: 'invoice',
-    title: 'Invoice Generated',
-    description: 'Invoice #INV-2026-001 is available.',
-    timestamp: '2026-07-22T14:15:00Z',
-    priority: 'low',
-    unread: false,
-    pinned: false,
-    archived: false,
-    actionLabel: 'Download Invoice',
-    actionType: 'download-invoice',
-  },
-  {
-    id: 'n4',
-    category: 'announcement',
-    title: 'Holiday Announcement',
-    description: 'School will remain closed on August 15.',
-    timestamp: '2026-07-21T08:00:00Z',
-    priority: 'low',
-    unread: false,
-    pinned: true,
-    archived: false,
-    actionLabel: 'View Details',
-    actionType: 'view-details',
-  },
-  {
-    id: 'n5',
-    category: 'receipt',
-    title: 'Receipt Downloaded',
-    description: 'Receipt RCT-9821 was downloaded to your device.',
-    timestamp: '2026-07-20T11:00:00Z',
-    priority: 'low',
-    unread: false,
-    pinned: false,
-    archived: false,
-    actionLabel: null,
-    actionType: null,
-  },
-  {
-    id: 'n6',
-    category: 'event',
-    title: 'Parent-Teacher Meeting',
-    description: 'PTM scheduled for Aug 10, 10 AM onwards.',
-    timestamp: '2026-07-19T08:00:00Z',
-    priority: 'medium',
-    unread: true,
-    pinned: false,
-    archived: false,
-    actionLabel: 'View Details',
-    actionType: 'view-details',
-  },
-  {
-    id: 'n7',
-    category: 'scholarship',
-    title: 'Scholarship Update',
-    description: 'Merit scholarship applications now open.',
-    timestamp: '2026-07-18T11:00:00Z',
-    priority: 'medium',
-    unread: false,
-    pinned: false,
-    archived: false,
-    actionLabel: 'View Details',
-    actionType: 'view-details',
-  },
-  {
-    id: 'n8',
-    category: 'academic',
-    title: 'Report Card Published',
-    description: 'Term 1 report card is now available.',
-    timestamp: '2026-07-17T09:30:00Z',
-    priority: 'medium',
-    unread: true,
-    pinned: false,
-    archived: false,
-    actionLabel: 'View Details',
-    actionType: 'view-details',
-  },
-  {
-    id: 'n9',
-    category: 'system',
-    title: 'Profile Updated',
-    description: 'Your contact number was updated successfully.',
-    timestamp: '2026-07-16T16:00:00Z',
-    priority: 'low',
-    unread: false,
-    pinned: false,
-    archived: false,
-    actionLabel: null,
-    actionType: null,
-  },
-  {
-    id: 'n10',
-    category: 'payment',
-    title: 'Payment Failed',
-    description: '₹6,000 payment via Cash could not be processed.',
-    timestamp: '2026-07-10T13:00:00Z',
-    priority: 'high',
-    unread: false,
-    pinned: false,
-    archived: false,
-    actionLabel: 'Retry Payment',
-    actionType: 'pay-now',
-  },
-  {
-    id: 'n11',
-    category: 'invoice',
-    title: 'Invoice Overdue',
-    description: 'Invoice #INV-2110 is now overdue.',
-    timestamp: '2026-07-02T09:00:00Z',
-    priority: 'high',
-    unread: false,
-    pinned: false,
-    archived: true,
-    actionLabel: 'View Details',
-    actionType: 'view-details',
-  },
-  {
-    id: 'n12',
-    category: 'announcement',
-    title: 'Uniform Guidelines Updated',
-    description: 'New uniform guidelines effective next term.',
-    timestamp: '2026-06-24T08:00:00Z',
-    priority: 'low',
-    unread: false,
-    pinned: false,
-    archived: true,
-    actionLabel: null,
-    actionType: null,
-  },
-  {
-    id: 'n13',
-    category: 'system',
-    title: 'App Update Available',
-    description: 'A new version of the parent portal is available.',
-    timestamp: '2026-06-20T08:00:00Z',
-    priority: 'low',
-    unread: false,
-    pinned: false,
-    archived: true,
-    actionLabel: null,
-    actionType: null,
-  },
-  {
-    id: 'n14',
-    category: 'academic',
-    title: "Principal's Message",
-    description: 'A message from the Principal regarding the new academic year.',
-    timestamp: '2026-07-22T07:30:00Z',
-    priority: 'high',
-    unread: true,
-    pinned: true,
-    archived: false,
-    actionLabel: 'View Details',
-    actionType: 'view-details',
-  },
-]
+import { apiGet } from '../../../services/apiClient'
 
 const DEFAULT_PREFERENCES = {
   paymentNotifications: true,
@@ -192,9 +9,59 @@ const DEFAULT_PREFERENCES = {
   marketingNotifications: false,
 }
 
-const FETCH_DELAY_MS = 700
+// The backend only tags notifications with a free-form `type` ('payment', 'info', ...).
+// Map that onto the fixed category vocabulary the Notification Center UI understands
+// (CATEGORY_ICONS has no fallback, so every notification must resolve to a known key).
+function mapCategory(type) {
+  if (type === 'payment') return 'payment'
+  if (type === 'invoice') return 'invoice'
+  if (type === 'receipt') return 'receipt'
+  if (type === 'event') return 'event'
+  if (type === 'scholarship') return 'scholarship'
+  if (type === 'academic') return 'academic'
+  if (type === 'info') return 'announcement'
+  return 'system'
+}
+
+function mapPriority(notification) {
+  const text = `${notification.title} ${notification.message}`.toLowerCase()
+  if (text.includes('fail') || text.includes('overdue')) return 'high'
+  if (notification.type === 'payment') return 'medium'
+  return 'low'
+}
+
+function mapAction(category) {
+  if (category === 'payment') return { actionLabel: 'View Receipt', actionType: 'view-receipt' }
+  if (category === 'invoice') return { actionLabel: 'Download Invoice', actionType: 'download-invoice' }
+  return { actionLabel: null, actionType: null }
+}
+
+function mapNotification(notification) {
+  const category = mapCategory(notification.type)
+  const { actionLabel, actionType } = mapAction(category)
+  return {
+    id: notification.id,
+    category,
+    title: notification.title,
+    description: notification.message,
+    timestamp: notification.created_at,
+    priority: mapPriority(notification),
+    unread: !notification.read,
+    pinned: false,
+    archived: false,
+    actionLabel,
+    actionType,
+  }
+}
 
 export async function fetchNotificationCenterData() {
-  await new Promise((resolve) => setTimeout(resolve, FETCH_DELAY_MS))
-  return { notifications: MOCK_NOTIFICATIONS, preferences: DEFAULT_PREFERENCES }
+  const [{ data: notifications }, preferencesResult] = await Promise.all([
+    apiGet('/notifications'),
+    apiGet('/settings/preferences').catch(() => ({ data: {} })),
+  ])
+
+  return {
+    notifications: (notifications || []).map(mapNotification),
+    preferences: { ...DEFAULT_PREFERENCES, ...(preferencesResult?.data || {}) },
+  }
 }

@@ -1,69 +1,65 @@
-const DELAY_MS = 600
+import { apiGet } from '../../../../services/apiClient'
 
-function delay(ms = DELAY_MS) {
-  return new Promise((resolve) => setTimeout(resolve, ms))
-}
+export async function fetchStudentsOverview() {
+  const [studentsRes, duesAnalyticsRes] = await Promise.all([
+    apiGet('/students'),
+    apiGet('/dues/analytics').catch(() => ({ data: null })),
+  ])
 
-const SECTIONS = ['A', 'B', 'C']
+  const students = studentsRes.data ?? []
+  const duesAnalytics = duesAnalyticsRes.data
 
-// Deterministic pseudo-random enrollment/compliance figures per class-section,
-// hand-tuned to look realistic (lower classes larger, senior classes smaller with more scholarships).
-const CLASS_BASE_ENROLLMENT = { 1: 46, 2: 45, 3: 44, 4: 43, 5: 42, 6: 41, 7: 40, 8: 39, 9: 38, 10: 37, 11: 30, 12: 28 }
-const CLASS_BASE_COMPLIANCE = { 1: 96, 2: 95, 3: 94, 4: 93, 5: 92, 6: 90, 7: 89, 8: 88, 9: 86, 10: 84, 11: 90, 12: 91 }
-const SECTION_OFFSET = { A: 2, B: 0, C: -3 }
-const SECTION_COMPLIANCE_OFFSET = { A: 3, B: 0, C: -4 }
+  const totalStudents = students.length
+  const activeEnrollments = students.filter((student) => student.status === 'active' || !student.status).length
 
-function buildClasses() {
-  const classes = []
-  for (let classNum = 1; classNum <= 12; classNum += 1) {
-    for (const section of SECTIONS) {
-      const enrolled = CLASS_BASE_ENROLLMENT[classNum] + SECTION_OFFSET[section]
-      const feeCompliancePct = Math.min(100, Math.max(60, CLASS_BASE_COMPLIANCE[classNum] + SECTION_COMPLIANCE_OFFSET[section]))
-      classes.push({
-        id: `class-${classNum}-${section}`,
-        className: String(classNum),
-        section,
-        enrolled,
-        feeCompliancePct,
-      })
-    }
+  // "New admissions this term" — approximated as admissions in the last 90 days, since the
+  // backend doesn't expose an explicit term/semester boundary.
+  const ninetyDaysAgo = Date.now() - 90 * 24 * 60 * 60 * 1000
+  const newAdmissionsThisTerm = students.filter((student) => student.admitted_at && new Date(student.admitted_at).getTime() >= ninetyDaysAgo).length
+
+  // Fee compliance rate is derived from the school-wide dues analytics (share of dues that are
+  // neither pending nor overdue) — the backend has no per-class compliance metric, so the same
+  // portal-wide rate is applied to every class/section row below.
+  let feeComplianceRate = 100
+  if (duesAnalytics && Number(duesAnalytics.totalDues) > 0) {
+    const outstandingShare = (Number(duesAnalytics.overdueCount) + Number(duesAnalytics.pendingCount)) / Number(duesAnalytics.totalDues)
+    feeComplianceRate = Math.max(0, Math.min(100, Math.round((1 - outstandingShare) * 100)))
   }
-  return classes
-}
 
-const CLASSES = buildClasses()
-
-function buildOverview() {
-  const totalStudents = CLASSES.reduce((sum, row) => sum + row.enrolled, 0)
-  const activeEnrollments = totalStudents - 12
-  const newAdmissionsThisTerm = 57
-  const weightedCompliance = CLASSES.reduce((sum, row) => sum + row.enrolled * row.feeCompliancePct, 0)
-  const feeComplianceRate = Math.round(weightedCompliance / totalStudents)
-
-  const classBreakdown = Array.from({ length: 12 }, (_, index) => {
-    const classNum = String(index + 1)
-    const rows = CLASSES.filter((row) => row.className === classNum)
-    const enrolled = rows.reduce((sum, row) => sum + row.enrolled, 0)
-    return { className: classNum, enrolled }
+  const classMap = new Map()
+  students.forEach((student) => {
+    const className = student.class_name ?? 'Unassigned'
+    const section = student.section ?? '-'
+    const key = `${className}-${section}`
+    if (!classMap.has(key)) classMap.set(key, { id: `class-${key}`, className, section, enrolled: 0 })
+    classMap.get(key).enrolled += 1
   })
-  const maxEnrolled = Math.max(...classBreakdown.map((row) => row.enrolled))
+  const classesTable = [...classMap.values()]
+    .sort((a, b) => a.className.localeCompare(b.className, undefined, { numeric: true }) || a.section.localeCompare(b.section))
+    .map((row) => ({ ...row, feeCompliancePct: feeComplianceRate }))
 
-  const feeStatusDistribution = [
-    { status: 'Paid in Full', count: Math.round(totalStudents * 0.58) },
-    { status: 'Partially Paid', count: Math.round(totalStudents * 0.24) },
-    { status: 'Overdue', count: Math.round(totalStudents * 0.12) },
-    { status: 'Not Started', count: Math.round(totalStudents * 0.06) },
-  ]
+  const breakdownMap = new Map()
+  students.forEach((student) => {
+    const className = student.class_name ?? 'Unassigned'
+    breakdownMap.set(className, (breakdownMap.get(className) ?? 0) + 1)
+  })
+  const classBreakdown = [...breakdownMap.entries()]
+    .sort((a, b) => a[0].localeCompare(b[0], undefined, { numeric: true }))
+    .map(([className, enrolled]) => ({ className, enrolled }))
+  const maxEnrolled = Math.max(1, ...classBreakdown.map((row) => row.enrolled))
+
+  const feeStatusDistribution = duesAnalytics
+    ? [
+        { status: 'Overdue', count: Number(duesAnalytics.overdueCount) || 0 },
+        { status: 'Pending', count: Number(duesAnalytics.pendingCount) || 0 },
+        { status: 'Fully Paid', count: Math.max(0, totalStudents - (Number(duesAnalytics.overdueCount) || 0) - (Number(duesAnalytics.pendingCount) || 0)) },
+      ]
+    : []
 
   return {
     kpis: { totalStudents, activeEnrollments, newAdmissionsThisTerm, feeComplianceRate },
     classBreakdown: classBreakdown.map((row) => ({ ...row, pct: Math.round((row.enrolled / maxEnrolled) * 100) })),
     feeStatusDistribution,
-    classesTable: CLASSES,
+    classesTable,
   }
-}
-
-export async function fetchStudentsOverview() {
-  await delay()
-  return buildOverview()
 }

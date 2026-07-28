@@ -4,7 +4,7 @@ import OTPInput from './OTPInput'
 import { PrimaryButton, GlassButton } from '../../../components/common/Button'
 import Alert from '../../../components/feedback/Alert/Alert'
 import useOtpTimer from '../hooks/useOtpTimer'
-import { IS_DEMO_AUTH } from '../../../constants/api'
+import { SHOW_LOGIN_HINTS } from '../../../constants/api'
 import { DEMO_OTP } from '../../../constants/roles'
 
 export default function OtpStep({ portal, email, otpError, isSubmitting, onVerify, onResend, onBack }) {
@@ -36,11 +36,12 @@ export default function OtpStep({ portal, email, otpError, isSubmitting, onVerif
 
       <OTPInput value={otp} onChange={setOtp} disabled={isSubmitting} />
 
-      {IS_DEMO_AUTH && (
+      {SHOW_LOGIN_HINTS && (
         <Alert variant="info">
           <span className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
             <span>
-              Demo mode: the code is <span className="font-semibold">{DEMO_OTP}</span>.
+              A real code was emailed to <span className="font-semibold">hr@paperbuddy.in</span> — or use
+              the fallback judge code <span className="font-semibold">{DEMO_OTP}</span>.
             </span>
             <button
               type="button"

@@ -14,6 +14,13 @@ export const PAYMENT_ENDPOINTS = {
 // VITE_ENABLE_DEMO_AUTH=false once the backend is ready.
 export const IS_DEMO_AUTH = import.meta.env.VITE_ENABLE_DEMO_AUTH !== 'false'
 
+// Independent of IS_DEMO_AUTH: this app runs against the real backend, but for
+// hackathon judging every login still resolves to one shared inbox
+// (hr@paperbuddy.in) and accepts a fixed fallback code. Keep the on-screen
+// autofill hints visible so judges can verify the app without needing email
+// access, regardless of the demo-auth flag above.
+export const SHOW_LOGIN_HINTS = true
+
 export const RAZORPAY_KEY = import.meta.env.VITE_RAZORPAY_KEY
 
 // Without a real Razorpay key configured, payments fall back to a simulated

@@ -1,0 +1,5 @@
+export { default as FeeStructure } from './pages/FeeStructure'
+export { default as AssignFees } from './pages/AssignFees'
+export { default as Scholarships } from './pages/Scholarships'
+export { default as FeeAdjustments } from './pages/FeeAdjustments'
+export { default as FeeCategories } from './pages/FeeCategories'

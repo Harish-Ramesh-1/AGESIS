@@ -13,7 +13,7 @@ export default function usePaymentSummary() {
 
   const subtotal = computePaymentAmount({ paymentType, feeDetails, selectedComponentKeys })
   const discount = 0
-  const lateFee = calculateCurrentLateFee(feeDetails.upcomingDue)
+  const lateFee = feeDetails.upcomingDue ? calculateCurrentLateFee(feeDetails.upcomingDue) : 0
   const finalAmount = Math.max(0, subtotal - discount + lateFee)
 
   return { subtotal, discount, lateFee, finalAmount }

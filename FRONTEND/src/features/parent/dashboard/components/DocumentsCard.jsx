@@ -11,6 +11,8 @@ function buildDocumentContent(doc) {
 }
 
 function DocumentRow({ doc }) {
+  if (!doc) return null
+
   const content = buildDocumentContent(doc)
 
   return (
@@ -71,17 +73,26 @@ export default function DocumentsCard() {
     )
   }
 
+  const hasAnyDocument = Boolean(documents.latestInvoice || documents.latestReceipt)
+
   function handleDownloadAll() {
-    downloadTextFile(`${documents.latestInvoice.id}.txt`, buildDocumentContent(documents.latestInvoice))
-    downloadTextFile(`${documents.latestReceipt.id}.txt`, buildDocumentContent(documents.latestReceipt))
+    if (documents.latestInvoice) downloadTextFile(`${documents.latestInvoice.id}.txt`, buildDocumentContent(documents.latestInvoice))
+    if (documents.latestReceipt) downloadTextFile(`${documents.latestReceipt.id}.txt`, buildDocumentContent(documents.latestReceipt))
   }
 
   return (
-    <DashboardCard title="Documents" action={<GlassButton onClick={handleDownloadAll}>Download All</GlassButton>}>
-      <div className="flex flex-col gap-3">
-        <DocumentRow doc={documents.latestInvoice} />
-        <DocumentRow doc={documents.latestReceipt} />
-      </div>
+    <DashboardCard
+      title="Documents"
+      action={hasAnyDocument ? <GlassButton onClick={handleDownloadAll}>Download All</GlassButton> : undefined}
+    >
+      {hasAnyDocument ? (
+        <div className="flex flex-col gap-3">
+          <DocumentRow doc={documents.latestInvoice} />
+          <DocumentRow doc={documents.latestReceipt} />
+        </div>
+      ) : (
+        <p className="text-sm text-slate-500 dark:text-slate-400">No documents generated yet.</p>
+      )}
     </DashboardCard>
   )
 }

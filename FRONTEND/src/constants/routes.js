@@ -55,3 +55,87 @@ export const ACCOUNTANT_ROUTES = {
   security: '/accountant/settings/security',
   preferences: '/accountant/settings/preferences',
 }
+
+export const ADMIN_ROUTES = {
+  dashboard: '/admin/dashboard',
+
+  usersAll: '/admin/users/all',
+  usersInvite: '/admin/users/invite',
+  usersPendingApprovals: '/admin/users/pending-approvals',
+  usersSuspended: '/admin/users/suspended',
+
+  schoolProfile: '/admin/school/profile',
+  schoolAcademicYears: '/admin/school/academic-years',
+  schoolClassesSections: '/admin/school/classes-sections',
+  schoolCalendar: '/admin/school/calendar',
+
+  studentDirectory: '/admin/students/directory',
+  studentAdmissions: '/admin/students/admissions',
+  studentPromotion: '/admin/students/promotion',
+  studentBulkImport: '/admin/students/bulk-import',
+
+  feeStructure: '/admin/fees/structure',
+  feeAssign: '/admin/fees/assign',
+  feeScholarships: '/admin/fees/scholarships',
+  feeAdjustments: '/admin/fees/adjustments',
+  feeCategories: '/admin/fees/categories',
+
+  paymentsOverview: '/admin/payments/overview',
+  paymentsVerification: '/admin/payments/verification',
+  paymentsGateway: '/admin/payments/gateway-transactions',
+  paymentsRefunds: '/admin/payments/refunds',
+  paymentsFailed: '/admin/payments/failed',
+  paymentsReconciliation: '/admin/payments/reconciliation',
+
+  duesList: '/admin/dues/list',
+  duesOverdue: '/admin/dues/overdue',
+  duesReminders: '/admin/dues/reminders',
+  duesLateFeeRules: '/admin/dues/late-fee-rules',
+
+  invoiceTemplates: '/admin/invoices/templates',
+  invoiceBulkGeneration: '/admin/invoices/bulk-generation',
+  invoiceReceiptArchive: '/admin/invoices/receipt-archive',
+  invoiceDocumentSettings: '/admin/invoices/document-settings',
+
+  reportsDailyCollection: '/admin/reports/daily-collection',
+  reportsMonthlyRevenue: '/admin/reports/monthly-revenue',
+  reportsOutstandingDues: '/admin/reports/outstanding-dues',
+  reportsCollectionAnalytics: '/admin/reports/collection-analytics',
+  reportsPaymentAnalytics: '/admin/reports/payment-analytics',
+  reportsExport: '/admin/reports/export',
+
+  announcements: '/admin/notifications/announcements',
+  notificationTemplates: '/admin/notifications/templates',
+  notificationScheduled: '/admin/notifications/scheduled',
+  notificationLogs: '/admin/notifications/logs',
+
+  auditLogs: '/admin/audit-logs',
+
+  rolesList: '/admin/roles/list',
+  rolesPermissionMatrix: '/admin/roles/permission-matrix',
+  rolesAssignment: '/admin/roles/assignment',
+
+  securitySessions: '/admin/security/sessions',
+  securityAlerts: '/admin/security/alerts',
+  securityPolicies: '/admin/security/policies',
+  securityAccessControl: '/admin/security/access-control',
+
+  integrationsPaymentGateway: '/admin/integrations/payment-gateway',
+  integrationsSms: '/admin/integrations/sms',
+  integrationsEmail: '/admin/integrations/email',
+  integrationsApiWebhooks: '/admin/integrations/api-webhooks',
+
+  settingsGeneral: '/admin/settings/general',
+  settingsBranding: '/admin/settings/branding',
+  settingsAcademicConfig: '/admin/settings/academic-config',
+  settingsNotificationsConfig: '/admin/settings/notifications-config',
+
+  aiInsights: '/admin/ai-insights',
+
+  backupSchedule: '/admin/backup/schedule',
+  backupHistory: '/admin/backup/history',
+  backupRestore: '/admin/backup/restore',
+  backupDataExport: '/admin/backup/data-export',
+
+  support: '/admin/support',
+}

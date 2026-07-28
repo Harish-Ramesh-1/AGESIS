@@ -1,14 +1,26 @@
 import { create } from 'zustand'
-import { BULK_CANDIDATES, generateBulkInvoices } from '../services/documentsService'
+import { fetchBulkCandidates, generateBulkInvoices } from '../services/documentsService'
 
 export const useBulkGenerationStore = create((set, get) => ({
-  candidates: BULK_CANDIDATES,
+  candidatesStatus: 'idle',
+  candidates: [],
   selectedIds: new Set(),
 
   isGenerating: false,
   progress: 0,
   results: [],
   generatedToday: 0,
+
+  fetchCandidates: async () => {
+    if (get().candidatesStatus === 'loading') return
+    set({ candidatesStatus: 'loading' })
+    try {
+      const candidates = await fetchBulkCandidates()
+      set({ candidatesStatus: 'success', candidates })
+    } catch {
+      set({ candidatesStatus: 'error', candidates: [] })
+    }
+  },
 
   toggleSelect: (id) =>
     set((state) => {
@@ -55,3 +67,7 @@ export const useBulkGenerationStore = create((set, get) => ({
     }))
   },
 }))
+
+// BulkInvoiceGeneration.jsx reads `candidates` directly without calling an explicit fetch action,
+// so the real candidate list is loaded as soon as this store module is used.
+useBulkGenerationStore.getState().fetchCandidates()

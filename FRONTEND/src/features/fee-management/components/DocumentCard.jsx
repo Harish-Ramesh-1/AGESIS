@@ -47,38 +47,42 @@ export default function DocumentCard() {
   }
 
   const actions = [
-    {
+    documents.statement && {
       label: 'Download Statement',
       icon: Download,
       onClick: () => downloadTextFile(`${documents.statement.id}.txt`, buildContent(documents.statement)),
     },
-    {
+    documents.invoice && {
       label: 'Download Invoice',
       icon: FileText,
       onClick: () => downloadTextFile(`${documents.invoice.id}.txt`, buildContent(documents.invoice)),
     },
-    {
+    documents.receipt && {
       label: 'Download Receipt',
       icon: Download,
       onClick: () => downloadTextFile(`${documents.receipt.id}.txt`, buildContent(documents.receipt)),
     },
-    { label: 'Print Statement', icon: Printer, onClick: () => handlePrint(documents.statement) },
-  ]
+    documents.statement && { label: 'Print Statement', icon: Printer, onClick: () => handlePrint(documents.statement) },
+  ].filter(Boolean)
 
   return (
     <GlassCard title="Documents" description="Download or print your fee documents">
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {actions.map((action) => (
-          <GlassButton
-            key={action.label}
-            icon={action.icon}
-            onClick={action.onClick}
-            className="w-full justify-center py-3"
-          >
-            {action.label}
-          </GlassButton>
-        ))}
-      </div>
+      {actions.length > 0 ? (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {actions.map((action) => (
+            <GlassButton
+              key={action.label}
+              icon={action.icon}
+              onClick={action.onClick}
+              className="w-full justify-center py-3"
+            >
+              {action.label}
+            </GlassButton>
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm text-slate-500 dark:text-slate-400">No documents generated yet.</p>
+      )}
     </GlassCard>
   )
 }
