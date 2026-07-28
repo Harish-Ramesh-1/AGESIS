@@ -9,9 +9,11 @@ export const env = {
   port: Number(process.env.PORT || 4000),
   nodeEnv: process.env.NODE_ENV || 'development',
   // Comma-separated list, e.g. "https://agesis.vercel.app,http://localhost:5173"
+  // Origin headers never carry a trailing slash — strip one if pasted in by
+  // mistake, since an exact-match miss here silently breaks every request.
   corsOrigins: (process.env.CORS_ORIGIN || 'http://localhost:5173')
     .split(',')
-    .map((origin) => origin.trim())
+    .map((origin) => origin.trim().replace(/\/+$/, ''))
     .filter(Boolean),
 
   supabaseUrl: process.env.SUPABASE_URL || '',
