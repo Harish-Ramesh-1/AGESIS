@@ -24,10 +24,6 @@ export const env = {
   jwtAccessExpiresIn: process.env.JWT_ACCESS_EXPIRES_IN || '15m',
   jwtRefreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '30d',
 
-  otpTtlMinutes: Number(process.env.OTP_TTL_MINUTES || 5),
-  otpDemoMode: bool(process.env.OTP_DEMO_MODE, true),
-  otpDemoCode: process.env.OTP_DEMO_CODE || '123456',
-
   razorpayKeyId: process.env.RAZORPAY_KEY_ID || '',
   razorpayKeySecret: process.env.RAZORPAY_KEY_SECRET || '',
   razorpayWebhookSecret: process.env.RAZORPAY_WEBHOOK_SECRET || '',

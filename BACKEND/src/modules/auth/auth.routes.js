@@ -1,13 +1,10 @@
 import { Router } from 'express'
 import crypto from 'crypto'
+import bcrypt from 'bcryptjs'
 import { supabaseAdmin } from '../../config/supabaseClient.js'
 import { asyncHandler } from '../../utils/asyncHandler.js'
 import { ApiError } from '../../utils/response.js'
-import { generateOtpCode, hashOtp } from '../../utils/otp.js'
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../../utils/jwt.js'
-import { env } from '../../config/env.js'
-import { sendEmail } from '../../config/mailer.js'
-import { buildOtpEmailHtml } from '../../utils/emailTemplates.js'
 import { requireAuth, attachFullUser } from '../../middleware/auth.js'
 import { logAudit } from '../audit/audit.service.js'
 
@@ -44,102 +41,22 @@ async function findUser({ portal, idValue, email }) {
 }
 
 authRouter.post(
-  '/otp/generate',
+  '/login',
   asyncHandler(async (req, res) => {
-    const { portal, idValue, email } = req.body || {}
-    if (!PORTALS.includes(portal) || !idValue || !email) {
-      throw new ApiError(400, 'portal, idValue and email are required.')
+    const { portal, idValue, email, password } = req.body || {}
+    if (!PORTALS.includes(portal) || !idValue || !email || !password) {
+      throw new ApiError(400, 'portal, idValue, email and password are required.')
     }
 
     const user = await findUser({ portal, idValue, email })
     if (!user) throw new ApiError(404, 'No account found matching those details.')
     if (user.status === 'suspended') throw new ApiError(403, 'This account has been suspended.')
     if (user.status === 'rejected') throw new ApiError(403, 'This account is not active.')
+    if (!user.password_hash) throw new ApiError(401, 'No password has been set for this account yet.')
 
-    const code = env.otpDemoMode ? env.otpDemoCode : generateOtpCode()
-    const expiresAt = new Date(Date.now() + env.otpTtlMinutes * 60 * 1000).toISOString()
+    const passwordValid = await bcrypt.compare(password, user.password_hash)
+    if (!passwordValid) throw new ApiError(401, 'Incorrect password. Please try again.')
 
-    const { error } = await supabaseAdmin.from('otp_codes').insert({
-      portal,
-      id_value: idValue,
-      email: user.email,
-      otp_hash: hashOtp(code),
-      expires_at: expiresAt,
-    })
-    if (error) throw new ApiError(500, error.message)
-
-    // @agesis.com is a fictional "just trying it out" sample domain (not a real
-    // inbox) — skip the real send so we don't bounce mail against it, and rely
-    // on the fallback code instead.
-    const isSampleAccount = user.email.toLowerCase().endsWith('@agesis.com')
-    if (isSampleAccount) {
-      console.log(`[auth] sample account ${user.unique_id} — skipping real email, use the fallback code.`)
-      return res.json({ message: 'Sample account — use the fallback code on the next step.' })
-    }
-
-    // OTP_DEMO_MODE=true: skip real email entirely for every account (not just
-    // sample ones) — the fallback code is the only path while it's on.
-    if (env.otpDemoMode) {
-      console.log(`[auth] demo mode — skipping real email for ${user.unique_id}, use the fallback code.`)
-      return res.json({ message: 'Use the fallback code on the next step.' })
-    }
-
-    // Fire-and-forget: the OTP is already stored and valid, so the response
-    // must not wait on SMTP — some hosts have slow/throttled outbound mail
-    // delivery, and awaiting it here risked the platform's own gateway
-    // timeout killing the connection before we could respond at all.
-    sendEmail({
-      to: user.email,
-      subject: 'Your AGESIS login code',
-      text: `Your one-time login code is ${code}. It expires in ${env.otpTtlMinutes} minutes.`,
-      html: buildOtpEmailHtml(code),
-    }).catch((error) => console.error('[auth] background email send failed', error.message))
-
-    res.json({ message: 'A one-time code has been sent to your registered email.' })
-  }),
-)
-
-authRouter.post(
-  '/otp/verify',
-  asyncHandler(async (req, res) => {
-    const { portal, idValue, email, otp } = req.body || {}
-    if (!PORTALS.includes(portal) || !idValue || !email || !otp) {
-      throw new ApiError(400, 'portal, idValue, email and otp are required.')
-    }
-
-    const user = await findUser({ portal, idValue, email })
-    if (!user) throw new ApiError(404, 'No account found matching those details.')
-
-    const { data: otpRow, error: otpError } = await supabaseAdmin
-      .from('otp_codes')
-      .select('*')
-      .eq('portal', portal)
-      .eq('id_value', idValue)
-      .ilike('email', email)
-      .is('consumed_at', null)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-    if (otpError) throw new ApiError(500, otpError.message)
-    if (!otpRow) throw new ApiError(401, 'No pending code found. Please request a new one.')
-    if (new Date(otpRow.expires_at).getTime() < Date.now()) {
-      throw new ApiError(401, 'This code has expired. Please request a new one.')
-    }
-    if (otpRow.attempts >= 5) {
-      throw new ApiError(429, 'Too many attempts. Please request a new code.')
-    }
-    // A fixed fallback code always works alongside the real emailed one — a safety
-    // net for live demos/hackathons where email delivery can't be guaranteed.
-    const isFallbackCode = otp === env.otpDemoCode
-    if (!isFallbackCode && otpRow.otp_hash !== hashOtp(otp)) {
-      await supabaseAdmin
-        .from('otp_codes')
-        .update({ attempts: otpRow.attempts + 1 })
-        .eq('id', otpRow.id)
-      throw new ApiError(401, 'Invalid code. Please try again.')
-    }
-
-    await supabaseAdmin.from('otp_codes').update({ consumed_at: new Date().toISOString() }).eq('id', otpRow.id)
     await supabaseAdmin.from('users').update({ last_login_at: new Date().toISOString() }).eq('id', user.id)
 
     const accessToken = signAccessToken(user)

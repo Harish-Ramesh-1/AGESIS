@@ -1,24 +1,16 @@
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 export const AUTH_ENDPOINTS = {
-  generateOtp: `${API_BASE_URL}/auth/otp/generate`,
-  verifyOtp: `${API_BASE_URL}/auth/otp/verify`,
+  login: `${API_BASE_URL}/auth/login`,
 }
 
 export const PAYMENT_ENDPOINTS = {
   checkout: `${API_BASE_URL}/payments/checkout`,
 }
 
-// No backend is wired up yet, so auth falls back to a mock flow (demo credentials
-// + a fixed OTP) until VITE_API_BASE_URL points at a real service. Set
-// VITE_ENABLE_DEMO_AUTH=false once the backend is ready.
-export const IS_DEMO_AUTH = import.meta.env.VITE_ENABLE_DEMO_AUTH !== 'false'
-
-// Independent of IS_DEMO_AUTH: this app runs against the real backend, but for
-// hackathon judging every login still resolves to one shared inbox
-// (hr@paperbuddy.in) and accepts a fixed fallback code. Keep the on-screen
-// autofill hints visible so judges can verify the app without needing email
-// access, regardless of the demo-auth flag above.
+// Password-based login against the real backend — keep the on-screen autofill
+// hints visible so judges/visitors can try every portal without needing to
+// know or remember any credentials themselves.
 export const SHOW_LOGIN_HINTS = true
 
 export const RAZORPAY_KEY = import.meta.env.VITE_RAZORPAY_KEY

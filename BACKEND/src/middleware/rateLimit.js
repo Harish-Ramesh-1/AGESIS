@@ -9,8 +9,8 @@ export const globalLimiter = rateLimit({
   message: { message: 'Too many requests. Please try again shortly.' },
 })
 
-// OTP generate/verify are the most attractive brute-force/spam targets
-// (guessing codes, hammering someone's inbox) — keep this tight.
+// Login is the most attractive brute-force target (password guessing) —
+// keep this tight.
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 20,

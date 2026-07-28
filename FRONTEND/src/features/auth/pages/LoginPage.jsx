@@ -5,7 +5,6 @@ import BrandPanel from '../components/BrandPanel'
 import LoginCard from '../components/LoginCard'
 import PortalSelector from '../components/PortalSelector'
 import PortalLoginForm from '../components/PortalLoginForm'
-import OtpStep from '../components/OtpStep'
 import usePortalAuth from '../hooks/usePortalAuth'
 
 export default function LoginPage() {
@@ -29,14 +28,7 @@ export default function LoginPage() {
         </div>
 
         <div className="flex flex-1 items-center justify-center px-6 py-6 sm:px-10">
-          <LoginCard
-            title={auth.step === 'otp' ? 'Verify Your Identity' : 'Welcome Back'}
-            subtitle={
-              auth.step === 'otp'
-                ? 'Enter the code to complete your sign in.'
-                : 'Choose your portal to continue'
-            }
-          >
+          <LoginCard title="Welcome Back" subtitle="Choose your portal to continue">
             {auth.step === 'form' && (
               <div className="flex flex-col gap-4">
                 <PortalSelector selectedPortalId={auth.selectedPortalId} onSelect={auth.selectPortal} />
@@ -46,24 +38,14 @@ export default function LoginPage() {
                   onIdChange={auth.setIdValue}
                   email={auth.email}
                   onEmailChange={auth.setEmail}
+                  password={auth.password}
+                  onPasswordChange={auth.setPassword}
                   errors={auth.errors}
                   formError={auth.formError}
                   isSubmitting={auth.isSubmitting}
                   onSubmit={auth.submitContinue}
                 />
               </div>
-            )}
-
-            {auth.step === 'otp' && (
-              <OtpStep
-                portal={auth.selectedPortal}
-                email={auth.email}
-                otpError={auth.otpError}
-                isSubmitting={auth.isSubmitting}
-                onVerify={auth.submitOtp}
-                onResend={auth.resendOtp}
-                onBack={auth.goBackToForm}
-              />
             )}
 
             {auth.step === 'success' && (

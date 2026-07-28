@@ -201,6 +201,13 @@ export const ADMIN_NAV_SECTIONS = [
     icon: 'LifeBuoy',
     path: ADMIN_ROUTES.support,
   },
+  {
+    type: 'link',
+    id: 'my-account',
+    label: 'My Account',
+    icon: 'UserCog',
+    path: ADMIN_ROUTES.myAccount,
+  },
 ]
 
 export function getPageTitle(pathname) {

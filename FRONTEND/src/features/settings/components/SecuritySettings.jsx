@@ -1,8 +1,10 @@
-import { useState } from 'react'
-import { Clock, Mail, Phone, ShieldCheck } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { CheckCircle2, Clock, KeyRound, Mail, Phone } from 'lucide-react'
 import { useSettingsStore } from '../../../store/settingsStore'
 import Badge from '../../../components/common/Badge'
 import GlassCard from '../../../components/common/GlassCard'
+import InputField from '../../../components/common/Input'
+import { PrimaryButton } from '../../../components/common/Button'
 import SectionHeader from './SectionHeader'
 import SecurityActionModal from './SecurityActionModal'
 import { formatRelativeTime } from '../../../utils/formatDate'
@@ -34,34 +36,122 @@ const ACTION_CARDS = [
   },
 ]
 
+const EMPTY_PASSWORD_FORM = { currentPassword: '', newPassword: '', confirmPassword: '' }
+const MIN_LENGTH = 8
+
 export default function SecuritySettings() {
   const security = useSettingsStore((state) => state.security)
   const requestEmailChange = useSettingsStore((state) => state.requestEmailChange)
   const requestMobileChange = useSettingsStore((state) => state.requestMobileChange)
   const cancelEmailChangeRequest = useSettingsStore((state) => state.cancelEmailChangeRequest)
   const cancelMobileChangeRequest = useSettingsStore((state) => state.cancelMobileChangeRequest)
+  const passwordStatus = useSettingsStore((state) => state.passwordStatus)
+  const passwordError = useSettingsStore((state) => state.passwordError)
+  const changePassword = useSettingsStore((state) => state.changePassword)
+  const resetPasswordStatus = useSettingsStore((state) => state.resetPasswordStatus)
   const [activeModal, setActiveModal] = useState(null)
+  const [passwordForm, setPasswordForm] = useState(EMPTY_PASSWORD_FORM)
+  const [touched, setTouched] = useState(false)
 
   const actions = { requestEmailChange, requestMobileChange, cancelEmailChangeRequest, cancelMobileChangeRequest }
   const activeCard = ACTION_CARDS.find((card) => card.key === activeModal)
+
+  useEffect(() => {
+    if (passwordStatus === 'success') {
+      setPasswordForm(EMPTY_PASSWORD_FORM)
+      setTouched(false)
+      const timeout = setTimeout(() => resetPasswordStatus(), 4000)
+      return () => clearTimeout(timeout)
+    }
+  }, [passwordStatus, resetPasswordStatus])
+
+  function handlePasswordChange(field, value) {
+    setPasswordForm((prev) => ({ ...prev, [field]: value }))
+  }
+
+  const validationErrors = {}
+  if (touched) {
+    if (passwordForm.newPassword.length > 0 && passwordForm.newPassword.length < MIN_LENGTH) {
+      validationErrors.newPassword = `New password must be at least ${MIN_LENGTH} characters.`
+    }
+    if (passwordForm.newPassword && passwordForm.currentPassword && passwordForm.newPassword === passwordForm.currentPassword) {
+      validationErrors.newPassword = 'New password must be different from your current password.'
+    }
+    if (passwordForm.confirmPassword && passwordForm.newPassword !== passwordForm.confirmPassword) {
+      validationErrors.confirmPassword = 'Passwords do not match.'
+    }
+  }
+
+  const isFormComplete = passwordForm.currentPassword && passwordForm.newPassword && passwordForm.confirmPassword
+  const isFormValid =
+    isFormComplete &&
+    passwordForm.newPassword.length >= MIN_LENGTH &&
+    passwordForm.newPassword !== passwordForm.currentPassword &&
+    passwordForm.newPassword === passwordForm.confirmPassword
+
+  async function handlePasswordSubmit(event) {
+    event.preventDefault()
+    setTouched(true)
+    if (!isFormValid) return
+    await changePassword(passwordForm)
+  }
 
   return (
     <div className="flex flex-col gap-6">
       <SectionHeader title="Security" description="Manage your login credentials" />
 
-      <GlassCard hover={false}>
-        <div className="flex items-center gap-3">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300">
-            <ShieldCheck className="h-4 w-4" aria-hidden="true" />
-          </span>
-          <div>
-            <p className="text-sm font-semibold text-slate-900 dark:text-white">OTP-Based Login</p>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Your account does not use a password. You sign in with a one-time code sent to your registered email
-              or mobile number.
+      <GlassCard title="Change Password" description="Use a strong password you don't reuse elsewhere.">
+        <form onSubmit={handlePasswordSubmit} className="flex flex-col gap-4">
+          <InputField
+            id="parent-current-password"
+            label="Current Password"
+            type="password"
+            autoComplete="current-password"
+            value={passwordForm.currentPassword}
+            onChange={(event) => handlePasswordChange('currentPassword', event.target.value)}
+            required
+          />
+          <InputField
+            id="parent-new-password"
+            label="New Password"
+            type="password"
+            autoComplete="new-password"
+            value={passwordForm.newPassword}
+            onChange={(event) => handlePasswordChange('newPassword', event.target.value)}
+            required
+            error={validationErrors.newPassword}
+            helperText={!validationErrors.newPassword ? `Minimum ${MIN_LENGTH} characters.` : undefined}
+          />
+          <InputField
+            id="parent-confirm-password"
+            label="Confirm New Password"
+            type="password"
+            autoComplete="new-password"
+            value={passwordForm.confirmPassword}
+            onChange={(event) => handlePasswordChange('confirmPassword', event.target.value)}
+            required
+            error={validationErrors.confirmPassword}
+          />
+
+          {passwordStatus === 'success' && (
+            <p className="flex items-center gap-2 text-sm font-medium text-emerald-600 dark:text-emerald-400">
+              <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />
+              Password changed successfully.
             </p>
+          )}
+          {passwordStatus === 'error' && (
+            <p role="alert" className="text-sm font-medium text-red-600 dark:text-red-400">
+              {passwordError}
+            </p>
+          )}
+
+          <div>
+            <PrimaryButton type="submit" fullWidth={false} isLoading={passwordStatus === 'loading'}>
+              <KeyRound className="h-4 w-4" aria-hidden="true" />
+              Change Password
+            </PrimaryButton>
           </div>
-        </div>
+        </form>
       </GlassCard>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

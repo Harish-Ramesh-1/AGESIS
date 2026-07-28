@@ -164,6 +164,7 @@ const RestoreData = lazy(() => import('../features/admin/backup-recovery').then(
 const DataExport = lazy(() => import('../features/admin/backup-recovery').then((m) => ({ default: m.DataExport })))
 
 const Support = lazy(() => import('../features/admin/support').then((m) => ({ default: m.Support })))
+const MyAccount = lazy(() => import('../features/admin/my-account').then((m) => ({ default: m.MyAccount })))
 
 function RouteFallback() {
   return (
@@ -261,6 +262,7 @@ export default function AdminRoutes() {
           <Route path={routeSegment(ADMIN_ROUTES.backupDataExport)} element={<DataExport />} />
 
           <Route path={routeSegment(ADMIN_ROUTES.support)} element={<Support />} />
+          <Route path={routeSegment(ADMIN_ROUTES.myAccount)} element={<MyAccount />} />
         </Route>
       </Routes>
     </Suspense>

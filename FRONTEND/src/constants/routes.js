@@ -138,4 +138,5 @@ export const ADMIN_ROUTES = {
   backupDataExport: '/admin/backup/data-export',
 
   support: '/admin/support',
+  myAccount: '/admin/my-account',
 }

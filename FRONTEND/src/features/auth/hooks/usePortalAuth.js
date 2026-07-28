@@ -2,12 +2,11 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { PORTALS, PORTAL_IDS } from '../../../constants/roles'
 import { isValidEmail, validatePortalId } from '../utils/validators'
-import { generateOtp, verifyOtp } from '../services/auth.service'
+import { login as loginRequest } from '../services/auth.service'
 import { useAuthStore } from '../../../store/authStore'
 
 const STEP = {
   FORM: 'form',
-  OTP: 'otp',
   SUCCESS: 'success',
 }
 
@@ -28,9 +27,9 @@ export default function usePortalAuth() {
   const [step, setStep] = useState(STEP.FORM)
   const [idValue, setIdValue] = useState('')
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [errors, setErrors] = useState({})
   const [formError, setFormError] = useState('')
-  const [otpError, setOtpError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const selectedPortal = PORTALS.find((portal) => portal.id === selectedPortalId)
@@ -45,6 +44,7 @@ export default function usePortalAuth() {
     setSelectedPortalId(portalId)
     setIdValue('')
     setEmail('')
+    setPassword('')
     setErrors({})
     setFormError('')
   }
@@ -57,6 +57,9 @@ export default function usePortalAuth() {
     if (!isValidEmail(email)) {
       nextErrors.email = 'Enter a valid email address.'
     }
+    if (!password) {
+      nextErrors.password = 'Enter your password.'
+    }
     setErrors(nextErrors)
     return Object.keys(nextErrors).length === 0
   }
@@ -68,20 +71,7 @@ export default function usePortalAuth() {
 
     setIsSubmitting(true)
     try {
-      await generateOtp({ portal: selectedPortalId, idValue, email })
-      setStep(STEP.OTP)
-    } catch (error) {
-      setFormError(error.message)
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  async function submitOtp(otp) {
-    setOtpError('')
-    setIsSubmitting(true)
-    try {
-      const result = await verifyOtp({ portal: selectedPortalId, idValue, email, otp })
+      const result = await loginRequest({ portal: selectedPortalId, idValue, email, password })
       setStep(STEP.SUCCESS)
       login({
         portal: selectedPortalId,
@@ -96,24 +86,10 @@ export default function usePortalAuth() {
         }, REDIRECT_DELAY_MS)
       }
     } catch (error) {
-      setOtpError(error.message)
+      setFormError(error.message)
     } finally {
       setIsSubmitting(false)
     }
-  }
-
-  async function resendOtp() {
-    setOtpError('')
-    try {
-      await generateOtp({ portal: selectedPortalId, idValue, email })
-    } catch (error) {
-      setOtpError(error.message)
-    }
-  }
-
-  function goBackToForm() {
-    setStep(STEP.FORM)
-    setOtpError('')
   }
 
   return {
@@ -124,14 +100,12 @@ export default function usePortalAuth() {
     setIdValue,
     email,
     setEmail,
+    password,
+    setPassword,
     errors,
     formError,
-    otpError,
     isSubmitting,
     selectPortal,
     submitContinue,
-    submitOtp,
-    resendOtp,
-    goBackToForm,
   }
 }

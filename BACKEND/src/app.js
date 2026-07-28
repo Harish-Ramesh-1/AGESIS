@@ -37,7 +37,7 @@ app.use('/api/payments/webhook', razorpayWebhookRouter)
 app.use(express.json({ limit: '2mb' }))
 app.use(express.urlencoded({ extended: true }))
 
-app.use('/api/auth/otp', authLimiter)
+app.use('/api/auth/login', authLimiter)
 
 app.get('/health', (req, res) => res.json({ status: 'ok', time: new Date().toISOString() }))
 

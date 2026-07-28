@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { apiGet } from '../services/apiClient'
+import { apiGet, apiPost } from '../services/apiClient'
 
 function applyFontSize(size) {
   document.documentElement.setAttribute('data-font-size', size)
@@ -75,6 +75,23 @@ export const useSettingsStore = create(
 
       cancelMobileChangeRequest: () =>
         set((state) => ({ security: { ...state.security, mobileChangeRequest: null } })),
+
+      passwordStatus: 'idle',
+      passwordError: null,
+
+      changePassword: async ({ currentPassword, newPassword }) => {
+        set({ passwordStatus: 'loading', passwordError: null })
+        try {
+          await apiPost('/settings/security/change-password', { currentPassword, newPassword })
+          set({ passwordStatus: 'success' })
+          return true
+        } catch (error) {
+          set({ passwordStatus: 'error', passwordError: error.message })
+          return false
+        }
+      },
+
+      resetPasswordStatus: () => set({ passwordStatus: 'idle', passwordError: null }),
     }),
     {
       name: 'agesis-settings',

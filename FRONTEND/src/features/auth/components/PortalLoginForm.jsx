@@ -1,4 +1,4 @@
-import { Mail, Sparkles } from 'lucide-react'
+import { Lock, Mail, Sparkles } from 'lucide-react'
 import InputField from '../../../components/common/Input/InputField'
 import { PrimaryButton } from '../../../components/common/Button'
 import Alert from '../../../components/feedback/Alert/Alert'
@@ -10,6 +10,8 @@ export default function PortalLoginForm({
   onIdChange,
   email,
   onEmailChange,
+  password,
+  onPasswordChange,
   errors,
   formError,
   isSubmitting,
@@ -18,6 +20,7 @@ export default function PortalLoginForm({
   function fillCredentials(credentials) {
     onIdChange(credentials.idValue)
     onEmailChange(credentials.email)
+    onPasswordChange(credentials.password)
   }
 
   return (
@@ -31,8 +34,8 @@ export default function PortalLoginForm({
                   Judge access: use{' '}
                   <span className="font-semibold">{portal.demoCredentials.idValue}</span> with{' '}
                   <span className="font-semibold">{portal.demoCredentials.email}</span>
-                  {portal.demoCredentials.note ? ` (${portal.demoCredentials.note})` : ''} — use the fallback
-                  code on the next step.
+                  {portal.demoCredentials.note ? ` (${portal.demoCredentials.note})` : ''}, password{' '}
+                  <span className="font-semibold">{portal.demoCredentials.password}</span>.
                 </span>
                 <button
                   type="button"
@@ -49,7 +52,7 @@ export default function PortalLoginForm({
                   <span>
                     Or <span className="font-semibold">{portal.demoCredentialsAlt.idValue}</span>
                     {portal.demoCredentialsAlt.note ? ` (${portal.demoCredentialsAlt.note})` : ''} — same
-                    inbox.
+                    password.
                   </span>
                   <button
                     type="button"
@@ -69,8 +72,8 @@ export default function PortalLoginForm({
               <span>
                 Just trying it out? Use{' '}
                 <span className="font-semibold">{portal.sampleCredentials.idValue}</span> with{' '}
-                <span className="font-semibold">{portal.sampleCredentials.email}</span> and the
-                fallback code on the next step.
+                <span className="font-semibold">{portal.sampleCredentials.email}</span>, password{' '}
+                <span className="font-semibold">{portal.sampleCredentials.password}</span>.
               </span>
               <button
                 type="button"
@@ -104,6 +107,17 @@ export default function PortalLoginForm({
         onChange={(event) => onEmailChange(event.target.value)}
         error={errors.email}
         autoComplete="email"
+        required
+      />
+      <InputField
+        label="Password"
+        type="password"
+        placeholder="••••••••"
+        icon={Lock}
+        value={password}
+        onChange={(event) => onPasswordChange(event.target.value)}
+        error={errors.password}
+        autoComplete="current-password"
         required
       />
 
