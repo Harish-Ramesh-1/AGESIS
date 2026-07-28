@@ -77,12 +77,16 @@ authRouter.post(
       return res.json({ message: 'Sample account — use the fallback code on the next step.' })
     }
 
-    await sendEmail({
+    // Fire-and-forget: the OTP is already stored and valid, so the response
+    // must not wait on SMTP — some hosts have slow/throttled outbound mail
+    // delivery, and awaiting it here risked the platform's own gateway
+    // timeout killing the connection before we could respond at all.
+    sendEmail({
       to: user.email,
       subject: 'Your AGESIS login code',
       text: `Your one-time login code is ${code}. It expires in ${env.otpTtlMinutes} minutes.`,
       html: buildOtpEmailHtml(code),
-    })
+    }).catch((error) => console.error('[auth] background email send failed', error.message))
 
     res.json({ message: 'A one-time code has been sent to your registered email.' })
   }),
