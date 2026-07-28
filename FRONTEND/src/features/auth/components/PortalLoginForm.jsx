@@ -31,8 +31,8 @@ export default function PortalLoginForm({
                   Judge access: use{' '}
                   <span className="font-semibold">{portal.demoCredentials.idValue}</span> with{' '}
                   <span className="font-semibold">{portal.demoCredentials.email}</span>
-                  {portal.demoCredentials.note ? ` (${portal.demoCredentials.note})` : ''} — a real OTP is
-                  emailed there.
+                  {portal.demoCredentials.note ? ` (${portal.demoCredentials.note})` : ''} — use the fallback
+                  code on the next step.
                 </span>
                 <button
                   type="button"

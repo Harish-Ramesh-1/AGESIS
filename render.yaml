@@ -32,7 +32,7 @@ services:
       - key: OTP_TTL_MINUTES
         value: 5
       - key: OTP_DEMO_MODE
-        value: "false"
+        value: "true"
       - key: OTP_DEMO_CODE
         sync: false
       - key: RAZORPAY_KEY_ID

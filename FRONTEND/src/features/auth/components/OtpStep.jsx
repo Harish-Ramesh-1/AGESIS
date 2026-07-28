@@ -40,8 +40,7 @@ export default function OtpStep({ portal, email, otpError, isSubmitting, onVerif
         <Alert variant="info">
           <span className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
             <span>
-              A real code was emailed to <span className="font-semibold">hr@paperbuddy.in</span> — or use
-              the fallback judge code <span className="font-semibold">{DEMO_OTP}</span>.
+              Use the fallback code <span className="font-semibold">{DEMO_OTP}</span> to continue.
             </span>
             <button
               type="button"

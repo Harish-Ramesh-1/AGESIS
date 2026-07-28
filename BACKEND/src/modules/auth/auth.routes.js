@@ -77,6 +77,13 @@ authRouter.post(
       return res.json({ message: 'Sample account — use the fallback code on the next step.' })
     }
 
+    // OTP_DEMO_MODE=true: skip real email entirely for every account (not just
+    // sample ones) — the fallback code is the only path while it's on.
+    if (env.otpDemoMode) {
+      console.log(`[auth] demo mode — skipping real email for ${user.unique_id}, use the fallback code.`)
+      return res.json({ message: 'Use the fallback code on the next step.' })
+    }
+
     // Fire-and-forget: the OTP is already stored and valid, so the response
     // must not wait on SMTP — some hosts have slow/throttled outbound mail
     // delivery, and awaiting it here risked the platform's own gateway
